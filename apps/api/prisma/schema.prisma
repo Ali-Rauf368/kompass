@@ -1,0 +1,289 @@
+// Operational data model of Kompass (OLTP). The analytics star schema lives in the
+// separate "analytics" Postgres schema and is maintained by src/analytics (raw SQL).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  HR
+  SALES
+  AFTERSALES
+  ACCOUNTING
+  MANAGER
+  EMPLOYEE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  LEFT
+}
+
+enum LeaveType {
+  VACATION
+  SICK
+  TRAINING
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum CustomerSegment {
+  PRIVATE
+  BUSINESS
+  PUBLIC_SECTOR
+}
+
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum TicketChannel {
+  PHONE
+  EMAIL
+  PORTAL
+  TECHNICIAN
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  CANCELLED
+}
+
+enum IngestionStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+}
+
+/// A legal entity of the group (e.g. Rheinwerk Solar GmbH).
+model Company {
+  id        Int        @id @default(autoincrement())
+  code      String     @unique
+  name      String
+  city      String
+  employees Employee[]
+  deals     Deal[]
+  tickets   Ticket[]
+  invoices  Invoice[]
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  code      String     @unique
+  name      String
+  employees Employee[]
+}
+
+model Employee {
+  id              Int            @id @default(autoincrement())
+  personnelNo     String         @unique
+  firstName       String
+  lastName        String
+  email           String         @unique
+  phone           String?
+  jobTitle        String
+  username        String         @unique /// sAMAccountName in Active Directory
+  status          EmployeeStatus @default(ACTIVE)
+  hireDate        DateTime       @db.Date
+  exitDate        DateTime?      @db.Date
+  vacationDays    Int            @default(30)
+  pseudonymizedAt DateTime? /// set when personal data was erased (GDPR Art. 17)
+  companyId       Int
+  company         Company        @relation(fields: [companyId], references: [id])
+  departmentId    Int
+  department      Department     @relation(fields: [departmentId], references: [id])
+  managerId       Int?
+  manager         Employee?      @relation("Reports", fields: [managerId], references: [id])
+  reports         Employee[]     @relation("Reports")
+  leaveRequests   LeaveRequest[] @relation("Requester")
+  leaveDecisions  LeaveRequest[] @relation("Approver")
+  deals           Deal[]
+  tickets         Ticket[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([departmentId, status])
+  @@index([companyId, status])
+  @@index([managerId])
+  @@index([lastName, firstName])
+}
+
+/// Users are provisioned on first LDAP login; roles are derived from AD group membership.
+model User {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique
+  displayName String
+  email       String
+  roles       Role[]
+  employeeId  Int?      @unique
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model LeaveRequest {
+  id          Int         @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee    @relation("Requester", fields: [employeeId], references: [id], onDelete: Cascade)
+  type        LeaveType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  workingDays Int
+  status      LeaveStatus @default(PENDING)
+  note        String?
+  approverId  Int?
+  approver    Employee?   @relation("Approver", fields: [approverId], references: [id])
+  decidedAt   DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@index([employeeId, startDate])
+  @@index([status, startDate])
+}
+
+model Customer {
+  id         Int             @id @default(autoincrement())
+  number     String          @unique /// customer number from the CRM (natural key for NiFi upserts)
+  name       String
+  segment    CustomerSegment
+  email      String?
+  phone      String?
+  street     String?
+  postalCode String
+  city       String
+  source     String          @default("manual")
+  deals      Deal[]
+  tickets    Ticket[]
+  invoices   Invoice[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([name])
+  @@index([postalCode])
+}
+
+model Deal {
+  id            Int       @id @default(autoincrement())
+  title         String
+  stage         DealStage @default(LEAD)
+  valueCents    Int
+  probability   Int       @default(10)
+  expectedClose DateTime  @db.Date
+  closedAt      DateTime?
+  lostReason    String?
+  customerId    Int
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  ownerId       Int
+  owner         Employee  @relation(fields: [ownerId], references: [id])
+  companyId     Int
+  company       Company   @relation(fields: [companyId], references: [id])
+  invoices      Invoice[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([stage, companyId])
+  @@index([ownerId, stage])
+  @@index([customerId])
+}
+
+model Ticket {
+  id              Int            @id @default(autoincrement())
+  number          String         @unique
+  subject         String
+  description     String
+  priority        TicketPriority @default(MEDIUM)
+  status          TicketStatus   @default(OPEN)
+  channel         TicketChannel
+  slaDueAt        DateTime
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  customerId      Int
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  assigneeId      Int?
+  assignee        Employee?      @relation(fields: [assigneeId], references: [id])
+  companyId       Int
+  company         Company        @relation(fields: [companyId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status, priority, slaDueAt])
+  @@index([assigneeId, status])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model Invoice {
+  id          Int           @id @default(autoincrement())
+  number      String        @unique /// invoice number from the ERP (natural key for NiFi upserts)
+  status      InvoiceStatus @default(OPEN)
+  amountCents Int
+  issueDate   DateTime      @db.Date
+  dueDate     DateTime      @db.Date
+  paidAt      DateTime?     @db.Date
+  customerId  Int
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  companyId   Int
+  company     Company       @relation(fields: [companyId], references: [id])
+  dealId      Int?
+  deal        Deal?         @relation(fields: [dealId], references: [id])
+  source      String        @default("manual")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, dueDate])
+  @@index([customerId])
+  @@index([companyId, issueDate])
+}
+
+/// One NiFi delivery to an ingestion endpoint.
+model IngestionRun {
+  id         Int             @id @default(autoincrement())
+  pipeline   String
+  batchId    String
+  status     IngestionStatus @default(RUNNING)
+  received   Int             @default(0)
+  inserted   Int             @default(0)
+  updated    Int             @default(0)
+  rejected   Int             @default(0)
+  errors     Json            @default("[]")
+  startedAt  DateTime        @default(now())
+  finishedAt DateTime?
+
+  @@unique([pipeline, batchId])
+  @@index([pipeline, startedAt(sort: Desc)])
+}

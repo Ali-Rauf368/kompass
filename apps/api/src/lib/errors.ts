@@ -1,0 +1,14 @@
+export class HttpError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public details?: unknown,
+  ) {
+    super(message);
+  }
+}
+
+export const notFound = (what = "Resource") => new HttpError(404, `${what} not found`);
+export const forbidden = (message = "You don't have permission to do that") => new HttpError(403, message);
+export const badRequest = (message: string, details?: unknown) => new HttpError(400, message, details);
+export const conflict = (message: string) => new HttpError(409, message);
