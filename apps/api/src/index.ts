@@ -4,7 +4,7 @@ import { config } from "./config";
 import { connectMongo, disconnectMongo } from "./db/mongo";
 import { disconnectPrisma, prisma } from "./db/prisma";
 import { logger } from "./lib/logger";
-import { attachRealtime } from "./realtime/hub";
+import { attachRealtime, closeRealtime } from "./realtime/hub";
 
 async function main() {
   const c = config();
@@ -15,6 +15,7 @@ async function main() {
 
   const shutdown = (signal: string) => {
     logger.info(`${signal} received, shutting down`);
+    closeRealtime();
     server.close(async () => {
       await Promise.all([disconnectPrisma(), disconnectMongo()]);
       process.exit(0);
