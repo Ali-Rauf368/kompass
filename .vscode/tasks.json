@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Kompass",
+      "detail": "Postgres, MongoDB, mock AD, then API (:4100) and web (:5190)",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": { "kind": "build", "isDefault": true },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    { "label": "Reset demo data", "type": "shell", "command": "npm run dev:services && npm run db:migrate && npm run db:seed", "problemMatcher": [] },
+    { "label": "Stop services", "type": "shell", "command": "npm run stop:services", "problemMatcher": [] },
+    { "label": "API tests", "type": "shell", "command": "npm -w apps/api test", "group": "test", "problemMatcher": [] },
+    { "label": "Web tests", "type": "shell", "command": "npm -w apps/web test", "group": "test", "problemMatcher": [] },
+    { "label": "End-to-end tests", "type": "shell", "command": "npm run test:e2e", "group": "test", "problemMatcher": [] }
+  ]
+}

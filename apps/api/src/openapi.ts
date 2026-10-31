@@ -33,6 +33,9 @@ export const openapi = {
     "/api/auth/login": {
       post: { tags: ["Auth"], security: [], summary: "Sign in with Active Directory credentials", requestBody: body({ type: "object", required: ["username", "password"], properties: { username: { type: "string", example: "anna.schmidt" }, password: { type: "string", example: "kompass" } } }), responses: { "200": ok("Signed in; sets the session cookie"), "401": ok("Wrong credentials", err), "429": ok("Rate limited", err), "503": ok("Directory unreachable", err) } },
     },
+    "/api/auth/signup": {
+      post: { tags: ["Auth"], security: [], summary: "Create a self-registered account (EMPLOYEE role only)", requestBody: body({ type: "object", required: ["username", "displayName", "email", "password"], properties: { username: { type: "string", example: "max.muster" }, displayName: { type: "string", example: "Max Muster" }, email: { type: "string", example: "max@example.com" }, password: { type: "string", minLength: 10 } } }), responses: { "201": ok("Account created; sets the session cookie"), "400": ok("Invalid input", err), "409": ok("Username taken", err), "429": ok("Rate limited", err), "503": ok("Directory unreachable", err) } },
+    },
     "/api/auth/logout": { post: { tags: ["Auth"], summary: "Sign out", responses: { "204": { description: "Signed out" } } } },
     "/api/auth/me": { get: { tags: ["Auth"], summary: "Current user and roles", responses: { "200": ok("User"), ...std } } },
     "/api/employees": { get: { tags: ["HR"], summary: "Employee directory (HR sees personnel fields)", parameters: q("q", "department", "company", "status", "sort", "page", "pageSize"), responses: { "200": ok("Page of employees", { $ref: "#/components/schemas/Paged" }), ...std } } },

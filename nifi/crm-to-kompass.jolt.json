@@ -1,0 +1,32 @@
+[
+  {
+    "operation": "shift",
+    "spec": {
+      "daten": {
+        "*": {
+          "kundennummer": "[&1].customerNumber",
+          "firma": "[&1].name",
+          "segment": "[&1].segment",
+          "email": "[&1].email",
+          "telefon": "[&1].phone",
+          "strasse": "[&1].street",
+          "plz": "[&1].postalCode",
+          "ort": "[&1].city"
+        }
+      }
+    }
+  },
+  {
+    "operation": "shift",
+    "spec": {
+      "*": {
+        "segment": {
+          "PRIVAT": { "#PRIVATE": "[&3].segment" },
+          "GEWERBE": { "#BUSINESS": "[&3].segment" },
+          "OEFFENTLICH": { "#PUBLIC_SECTOR": "[&3].segment" }
+        },
+        "*": "[&1].&"
+      }
+    }
+  }
+]

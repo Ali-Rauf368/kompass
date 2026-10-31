@@ -44,6 +44,36 @@ describe("POST /api/auth/login (Active Directory)", () => {
   });
 });
 
+describe("POST /api/auth/signup (self-registration)", () => {
+  const signup = (over: Record<string, string> = {}) =>
+    api().post("/api/auth/signup").set(CSRF).send({ username: "new.person", displayName: "New Person", email: "new@example.com", password: "a-long-secret", ...over });
+
+  it("creates an EMPLOYEE account, signs in, and allows logging in again", async () => {
+    const res = await signup().expect(201);
+    expect(res.body.user).toMatchObject({ username: "new.person", roles: ["EMPLOYEE"], employeeId: null });
+    expect(res.headers["set-cookie"]?.[0]).toMatch(/kompass_session=.+HttpOnly/);
+    await login("new.person", "a-long-secret").expect(200);
+    expect((await login("new.person", "wrong-password").expect(401)).body.error).toBe("Username or password is incorrect");
+  });
+
+  it("refuses usernames that exist in Active Directory", async () => {
+    await signup({ username: "anna.schmidt" }).expect(409);
+  });
+
+  it("refuses duplicate usernames", async () => {
+    await signup({ username: "twice.person" }).expect(201);
+    await signup({ username: "twice.person" }).expect(409);
+  });
+
+  it.each([
+    ["short password", { password: "short" }],
+    ["bad email", { email: "nope" }],
+    ["bad username", { username: "a b" }],
+  ])("rejects %s", async (_label, over) => {
+    await signup(over).expect(400);
+  });
+});
+
 describe("sessions", () => {
   it("returns the current user from the cookie", async () => {
     const s = await signIn("lea.fischer");

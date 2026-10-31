@@ -153,6 +153,8 @@ model User {
   email       String
   roles       Role[]
   employeeId  Int?      @unique
+  /// Set only for self-registered accounts; Active Directory users authenticate via LDAP.
+  passwordHash String?
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
 }

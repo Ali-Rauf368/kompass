@@ -1,0 +1,10 @@
+# Nightly jobs: warehouse refresh, GDPR retention, backup (see kompass-jobs.service).
+[Unit]
+Description=Kompass nightly jobs
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

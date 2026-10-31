@@ -1,0 +1,7 @@
+# Default reviewers; adjust to the team.
+*                         @rheinwerk/kompass-dev
+/apps/api/sql/            @rheinwerk/kompass-dev @rheinwerk/data
+/apps/api/src/lib/gdpr.ts @rheinwerk/kompass-dev @rheinwerk/data-protection
+/docs/gdpr.md             @rheinwerk/data-protection
+/nifi/                    @rheinwerk/data
+/infra/                   @rheinwerk/kompass-dev @rheinwerk/it-operations
