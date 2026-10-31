@@ -58,7 +58,8 @@ router.post("/:pipeline", async (req, res) => {
       continue;
     }
     try {
-      (await def.upsert(db, parsed.data)) === "inserted" ? inserted++ : updated++;
+      if ((await def.upsert(db, parsed.data)) === "inserted") inserted++;
+      else updated++;
     } catch (err) {
       errors.push({ record: i, message: err instanceof Error ? err.message : String(err) });
     }

@@ -153,7 +153,8 @@ export async function seedDatabase(opts: { now?: Date; withMongo?: boolean } = {
     const ageHours = i < 18 ? r.int(1, 60) : r.int(24, 700 * 24);
     const created = new Date(now.getTime() - ageHours * 3_600_000);
     const sla = new Date(created.getTime() + SLA_HOURS[priority] * 3_600_000);
-    const done = ageHours > 24 * 5 ? r.chance(0.97) : r.chance(0.35);
+    // Everything older than a month is finished; a few tickets from the last weeks are still open (some overdue).
+    const done = ageHours > 24 * 30 ? true : ageHours > 24 * 5 ? r.chance(0.9) : r.chance(0.35);
     const resolveHours = SLA_HOURS[priority] * (r.chance(0.86) ? r.next() * 0.9 + 0.05 : 1 + r.next());
     const resolvedAt = done ? new Date(Math.min(created.getTime() + resolveHours * 3_600_000, now.getTime() - 60_000)) : null;
     const status = done ? (r.chance(0.8) ? "CLOSED" : "RESOLVED") : r.pick(["OPEN", "IN_PROGRESS", "IN_PROGRESS", "WAITING"] as const);
@@ -217,7 +218,7 @@ export async function seedDatabase(opts: { now?: Date; withMongo?: boolean } = {
 
   if (opts.withMongo !== false) {
     await Promise.all([AuditEvent.deleteMany({}), Notification.deleteMany({}), TicketActivity.deleteMany({}), RawIngest.deleteMany({})]);
-    const recent = await db.ticket.findMany({ where: { createdAt: { gte: ago(30) } }, include: { assignee: true } });
+    const recent = await db.ticket.findMany({ include: { assignee: true } });
     const activities = recent.flatMap((t) => {
       const items: Record<string, unknown>[] = [{ ticketId: t.id, kind: "created", author: "system", authorName: "Kompass", body: `Ticket opened via ${t.channel.toLowerCase()}`, at: t.createdAt }];
       if (t.firstResponseAt && t.assignee) {

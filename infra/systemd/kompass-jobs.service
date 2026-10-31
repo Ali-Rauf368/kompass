@@ -1,0 +1,11 @@
+[Unit]
+Description=Kompass nightly jobs (analytics refresh, retention, backup)
+
+[Service]
+Type=oneshot
+User=kompass
+WorkingDirectory=/opt/kompass/apps/api
+EnvironmentFile=/etc/kompass/api.env
+ExecStart=/usr/bin/node dist/scripts/analytics-refresh.js
+ExecStart=/usr/bin/node dist/scripts/retention.js
+ExecStart=/opt/kompass/infra/backup/backup.sh

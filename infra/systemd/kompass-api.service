@@ -1,0 +1,23 @@
+# Alternative to Docker: run the API directly on a Linux server.
+# Install: cp kompass-api.service /etc/systemd/system/ && systemctl enable --now kompass-api
+[Unit]
+Description=Kompass API
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=kompass
+WorkingDirectory=/opt/kompass/apps/api
+EnvironmentFile=/etc/kompass/api.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/log/kompass
+
+[Install]
+WantedBy=multi-user.target

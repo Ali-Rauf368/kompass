@@ -54,6 +54,8 @@ const crmCustomer = z.object({
   city: z.string().trim().min(2).max(100),
 });
 
+// Each entry has its own record type; the map is heterogeneous by design.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const PIPELINES: Record<string, PipelineDef<any>> = {
   "erp-invoices": {
     description: "Invoices exported nightly from the ERP as CSV (NiFi: GetFile → ConvertRecord → InvokeHTTP)",

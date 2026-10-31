@@ -63,3 +63,21 @@ export async function authenticate(username: string, password: string): Promise<
     await client.unbind().catch(() => {});
   }
 }
+
+/** True when the directory already has an account with this sAMAccountName (enabled or not). */
+export async function directoryHasUser(username: string): Promise<boolean> {
+  const c = config();
+  const client = new Client({ url: c.LDAP_URL, timeout: c.LDAP_TIMEOUT_MS, connectTimeout: c.LDAP_TIMEOUT_MS });
+  try {
+    await client.bind(c.LDAP_BIND_DN, c.LDAP_BIND_PASSWORD);
+    const { searchEntries } = await client.search(c.LDAP_BASE_DN, {
+      scope: "sub",
+      filter: c.LDAP_USER_FILTER.replace("{{username}}", escapeFilter(username)),
+      attributes: ["dn"],
+      sizeLimit: 1,
+    });
+    return searchEntries.length > 0;
+  } finally {
+    await client.unbind().catch(() => {});
+  }
+}

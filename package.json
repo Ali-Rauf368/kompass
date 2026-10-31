@@ -31,5 +31,15 @@
     "@parcel/watcher@2.6.0": true,
     "@scarf/scarf": false,
     "mongodb-memory-server": false
+  },
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^10.0.6",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript-eslint": "^8.72.1"
   }
 }
