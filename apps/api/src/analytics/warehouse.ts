@@ -42,6 +42,8 @@ export async function refreshWarehouse(): Promise<RefreshResult> {
 let pending: NodeJS.Timeout | undefined;
 /** Debounced refresh after writes, so a burst of changes triggers one ETL run. */
 export function scheduleRefresh(onDone?: () => void, delayMs = 3000) {
+  // Tests refresh explicitly; a timer firing after a test file finished would hit closed connections.
+  if (process.env.NODE_ENV === "test") return;
   clearTimeout(pending);
   pending = setTimeout(() => {
     refreshWarehouse()

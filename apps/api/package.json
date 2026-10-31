@@ -17,7 +17,7 @@
     "retention": "tsx --env-file-if-exists=.env src/scripts/retention.ts",
     "ldap:dev": "tsx --env-file-if-exists=.env src/scripts/dev-ldap.ts",
     "mongo:dev": "tsx src/scripts/dev-mongo.ts",
-    "test": "jest --runInBand"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

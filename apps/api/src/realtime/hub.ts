@@ -85,3 +85,11 @@ export function publish(audience: Audience, event: LiveEvent) {
 }
 
 export const connectedClients = () => clients.size;
+
+/** Terminates all sockets so http.Server#close can finish (graceful shutdown and tests). */
+export function closeRealtime() {
+  for (const c of clients) c.socket.terminate();
+  clients.clear();
+  wss?.close();
+  wss = undefined;
+}
